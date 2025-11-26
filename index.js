@@ -34,23 +34,19 @@ function getRandom(arr) {
 }
 
 // Утреннее (09:30)
-cron.schedule("30 9 * * *", () => {
-  const day = new Date().getDay(); // 0 — воскресенье
-  if (day === 0) {
-    bot.telegram.sendMessage(CHAT_ID, getRandom(sundayMessages));
-  } else {
-    bot.telegram.sendMessage(CHAT_ID, getRandom(morningMessages));
-  }
+cron.schedule("30 4 * * 1-6", () => {
+  bot.telegram.sendMessage(CHAT_ID, getRandom(morningMessages));
 });
 
-// Вечернее (19:00)
-cron.schedule("0 19 * * *", () => {
-  const day = new Date().getDay();
-  if (day === 0) {
-    bot.telegram.sendMessage(CHAT_ID, getRandom(sundayMessages));
-  } else {
-    bot.telegram.sendMessage(CHAT_ID, getRandom(eveningMessages));
-  }
+
+cron.schedule("15 15 * * 1-6", () => {
+  bot.telegram.sendMessage(CHAT_ID, getRandom(eveningMessages));
 });
+
+
+cron.schedule("0 6 * * 0", () => {
+  bot.telegram.sendMessage(CHAT_ID, getRandom(sundayMessages));
+});
+
 
 bot.launch();
