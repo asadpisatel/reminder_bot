@@ -2,6 +2,13 @@ require("dotenv").config();
 const { Telegraf } = require("telegraf");
 const cron = require("node-cron");
 
+const http = require("http");
+const server = http.createServer((req, res) => {
+  res.writeHead(200, {"Content-Type": "text/plain"});
+  res.end("ok");
+});
+server.listen(process.env.PORT || 3000);
+
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const CHAT_ID = process.env.CHAT_ID;
 
