@@ -10,44 +10,52 @@ server.listen(process.env.PORT || 3000);
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const CHAT_ID = process.env.CHAT_ID;
+const ADMIN_ID = process.env.YOUR_TELEGRAM_USER_ID; 
 
-// Сообщения
 const morningMessages = [
   "Доброе утро! Я на работе, у меня всё хорошо. Как у вас дела?",
   "Всем доброе утро! У меня все хорошо, как у вас дела? Малыш малыш ты идешь в школу, смотришь телевизор, кушаешь.",
-  "Доброе утро! У меня все хорошо. Как у вас дела? Я на работе."
+  "Доброе утро! У меня все хорошо. Как у вас дела? Дили, Эли, Малыш, Мама? Я на работе."
 ];
 
 const eveningMessages = [
   "Я пришел домой, кушаю, не беспокойтесь.",
-  "Я пришел домой. Всем доброго вечера. Малыш малыш ты сидишь",
-  "У меня всё хорошо. Покушал."
+  "Я пришел домой. Всем доброго вечера. Малыш малыш ты сидишь. Я покушал.",
+  "У меня всё хорошо. Покушал. Пришел домой."
 ];
 
 const sundayMessages = [
   "Сегодня дома, поспал, делаю дела со стажировкой",
+  "Всем привет! Сегодня дома, отдыхаю, как ваши дела?"
 ];
 
 function getRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// Создаем клавиатуру с кнопками
 const keyboard = Markup.keyboard([
   ['Утро', 'Вечер'],
   ['Sunday']
 ]).resize();
 
-// Обработчик команды /start
-bot.start((ctx) => {
-  ctx.reply('Привет! Выберите время для отправки сообщения:', keyboard);
+bot.use((ctx, next) => {
+    if (ctx.from.id !== ADMIN_ID && String(ctx.chat.id) === String(CHAT_ID)) {
+        return;
+    }
+    return next();
 });
 
-// Обработчик кнопки "Утро"
+bot.start((ctx) => {
+  if (ctx.from.id === ADMIN_ID) {
+    ctx.reply('Привет! Выберите время для отправки сообщения:', keyboard);
+  }
+});
+
 bot.hears('Утро', (ctx) => {
+  if (ctx.from.id !== ADMIN_ID) return;
   try {
     const message = getRandom(morningMessages);
-    bot.telegram.sendMessage(CHAT_ID, message);
+    bot.telegram.sendMessage(CHAT_ID, message); 
     ctx.reply('✅ Утреннее сообщение отправлено в группу!', keyboard);
   } catch (error) {
     console.error('Ошибка при отправке утреннего сообщения:', error);
@@ -55,8 +63,8 @@ bot.hears('Утро', (ctx) => {
   }
 });
 
-// Обработчик кнопки "Вечер"
 bot.hears('Вечер', (ctx) => {
+  if (ctx.from.id !== ADMIN_ID) return;
   try {
     const message = getRandom(eveningMessages);
     bot.telegram.sendMessage(CHAT_ID, message);
@@ -67,8 +75,8 @@ bot.hears('Вечер', (ctx) => {
   }
 });
 
-// Обработчик кнопки "Sunday"
 bot.hears('Sunday', (ctx) => {
+  if (ctx.from.id !== ADMIN_ID) return;
   try {
     const message = getRandom(sundayMessages);
     bot.telegram.sendMessage(CHAT_ID, message);
@@ -79,8 +87,8 @@ bot.hears('Sunday', (ctx) => {
   }
 });
 
-// Обработчик для остальных сообщений
 bot.on('text', (ctx) => {
+  if (ctx.from.id !== ADMIN_ID) return;
   if (!['Утро', 'Вечер', 'Sunday'].includes(ctx.message.text)) {
     ctx.reply('Пожалуйста, используйте кнопки для выбора времени отправки:', keyboard);
   }
@@ -88,6 +96,5 @@ bot.on('text', (ctx) => {
 
 bot.launch();
 
-// Включить graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
