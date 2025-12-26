@@ -83,7 +83,6 @@ bot.hears(['Утро', 'Вечер', 'Sunday'], async (ctx) => {
   if (message) {
     try {
       await bot.telegram.sendMessage(CHAT_ID, message);
-      console.log(`Сообщение отправлено в группу ${CHAT_ID}: ${message.substring(0, 50)}...`);
     } catch (error) {
       console.error('Ошибка при отправке сообщения в группу:', error);
     }
