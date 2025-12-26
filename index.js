@@ -62,7 +62,7 @@ bot.use(async (ctx, next) => {
 });
 
 bot.start((ctx) => {
-  ctx.replyWithHTML(' ', privateKeyboard);
+  ctx.reply('Выберите время:', privateKeyboard);
 });
 
 bot.hears(['Утро', 'Вечер', 'Sunday'], async (ctx) => {
@@ -83,17 +83,25 @@ bot.hears(['Утро', 'Вечер', 'Sunday'], async (ctx) => {
   if (message) {
     try {
       await bot.telegram.sendMessage(CHAT_ID, message);
+      console.log(`Сообщение отправлено в группу ${CHAT_ID}: ${message.substring(0, 50)}...`);
     } catch (error) {
       console.error('Ошибка при отправке сообщения в группу:', error);
     }
   }
   
-  ctx.replyWithHTML(' ', privateKeyboard);
-});
+  ctx.reply('Выберите время:', privateKeyboard);
+})
 
 bot.launch();
 
 console.log('Бот запущен!');
+
+process.on('warning', (warning) => {
+  if (warning.name === 'DeprecationWarning' && warning.message.includes('punycode')) {
+    return;
+  }
+  console.warn(warning.name, warning.message);
+});
 
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
