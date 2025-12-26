@@ -3,14 +3,14 @@ const { Telegraf, Markup } = require("telegraf");
 
 const http = require("http");
 const server = http.createServer((req, res) => {
-  res.writeHead(200, {"Content-Type": "text/plain"});
+  res.writeHead(200, { "Content-Type": "text/plain" });
   res.end("ok");
 });
 server.listen(process.env.PORT || 3000);
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const CHAT_ID = process.env.CHAT_ID;
-const ADMIN_ID = process.env.YOUR_TELEGRAM_USER_ID; 
+const ALLOWED_USER_ID = parseInt(process.env.ALLOWED_USER_ID);
 
 const morningMessages = [
   "Доброе утро! Я на работе, у меня всё хорошо. Как у вас дела?",
@@ -33,68 +33,67 @@ function getRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-const keyboard = Markup.keyboard([
+const privateKeyboard = Markup.keyboard([
   ['Утро', 'Вечер'],
   ['Sunday']
-]).resize();
+]).resize().oneTime();
 
-bot.use((ctx, next) => {
-    if (ctx.from.id !== ADMIN_ID && String(ctx.chat.id) === String(CHAT_ID)) {
-        return;
-    }
-    return next();
+function isAllowedUser(userId) {
+  return userId === ALLOWED_USER_ID;
+}
+
+bot.use(async (ctx, next) => {
+  const chatId = ctx.chat?.id;
+  const userId = ctx.from?.id;
+  
+  if (chatId && String(chatId) === String(CHAT_ID)) {
+    return; 
+  }
+  
+  if (ctx.chat.type !== 'private') {
+    return;
+  }
+  
+  if (!isAllowedUser(userId)) {
+    return; 
+  }
+  
+  return next();
 });
 
 bot.start((ctx) => {
-  if (ctx.from.id === ADMIN_ID) {
-    ctx.reply('Привет! Выберите время для отправки сообщения:', keyboard);
-  }
+  ctx.replyWithHTML(' ', privateKeyboard);
 });
 
-bot.hears('Утро', (ctx) => {
-  if (ctx.from.id !== ADMIN_ID) return;
-  try {
-    const message = getRandom(morningMessages);
-    bot.telegram.sendMessage(CHAT_ID, message); 
-    ctx.reply('✅ Утреннее сообщение отправлено в группу!', keyboard);
-  } catch (error) {
-    console.error('Ошибка при отправке утреннего сообщения:', error);
-    ctx.reply('❌ Произошла ошибка при отправке сообщения', keyboard);
+bot.hears(['Утро', 'Вечер', 'Sunday'], async (ctx) => {
+  let message;
+  
+  switch (ctx.message.text) {
+    case 'Утро':
+      message = getRandom(morningMessages);
+      break;
+    case 'Вечер':
+      message = getRandom(eveningMessages);
+      break;
+    case 'Sunday':
+      message = getRandom(sundayMessages);
+      break;
   }
-});
-
-bot.hears('Вечер', (ctx) => {
-  if (ctx.from.id !== ADMIN_ID) return;
-  try {
-    const message = getRandom(eveningMessages);
-    bot.telegram.sendMessage(CHAT_ID, message);
-    ctx.reply('✅ Вечернее сообщение отправлено в группу!', keyboard);
-  } catch (error) {
-    console.error('Ошибка при отправке вечернего сообщения:', error);
-    ctx.reply('❌ Произошла ошибка при отправке сообщения', keyboard);
+  
+  if (message) {
+    try {
+      await bot.telegram.sendMessage(CHAT_ID, message);
+    } catch (error) {
+      console.error('Ошибка при отправке сообщения в группу:', error);
+    }
   }
-});
-
-bot.hears('Sunday', (ctx) => {
-  if (ctx.from.id !== ADMIN_ID) return;
-  try {
-    const message = getRandom(sundayMessages);
-    bot.telegram.sendMessage(CHAT_ID, message);
-    ctx.reply('✅ Воскресное сообщение отправлено в группу!', keyboard);
-  } catch (error) {
-    console.error('Ошибка при отправке воскресного сообщения:', error);
-    ctx.reply('❌ Произошла ошибка при отправке сообщения', keyboard);
-  }
-});
-
-bot.on('text', (ctx) => {
-  if (ctx.from.id !== ADMIN_ID) return;
-  if (!['Утро', 'Вечер', 'Sunday'].includes(ctx.message.text)) {
-    ctx.reply('Пожалуйста, используйте кнопки для выбора времени отправки:', keyboard);
-  }
+  
+  ctx.replyWithHTML(' ', privateKeyboard);
 });
 
 bot.launch();
+
+console.log('Бот запущен!');
 
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
